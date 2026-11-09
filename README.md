@@ -116,5 +116,6 @@ Click the **pencil/lock icon (✏️🔒)** in the top right of the navigation h
 - [x] Finale triggers continuous canvas fireworks, friendship certificate, and replay loop.
 - [x] Music player supports play/pause, volume control, and acoustic celesta synthesizer fallback.
 - [x] All 4 Secret Heart easter eggs function and update discovery progress.
+- [x] Anti-Inspect & Security Protection: Right-click context menu, F12, Ctrl+Shift+I/J/C, Ctrl+U, and image dragging are disabled to preserve surprise privacy.
 - [x] Production build passes cleanly with zero errors (`npm run build`).
 
