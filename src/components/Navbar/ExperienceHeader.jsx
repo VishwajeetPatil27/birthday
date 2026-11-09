@@ -41,11 +41,11 @@ export const ExperienceHeader = ({ onOpenCustomizer }) => {
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-400 to-rose-400 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition">
               <Heart className="w-4 h-4 fill-white" />
             </div>
-            <div className="hidden sm:block">
-              <span className="font-serif text-sm font-bold text-gray-800 tracking-wide block leading-tight">
+            <div className="flex flex-col">
+              <span className="font-serif text-xs sm:text-sm font-bold text-gray-800 tracking-wide block leading-tight">
                 A Thousand Little Reasons
               </span>
-              <span className="text-[10px] text-pink-500 font-medium">
+              <span className="text-[10px] text-pink-500 font-medium block truncate max-w-[120px] sm:max-w-none">
                 For {config.recipient.name} ✨
               </span>
             </div>

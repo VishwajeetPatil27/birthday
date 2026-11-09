@@ -63,8 +63,13 @@ export const BirthdayProvider = ({ children }) => {
     setCloudSyncStatus('checking');
 
     try {
-      const result = await fetchBirthdayConfig('default');
-      if (result.ok && result.config) {
+      const fetchPromise = fetchBirthdayConfig('default');
+      const timeoutPromise = new Promise((resolve) =>
+        setTimeout(() => resolve({ ok: false, timeout: true }), 4000)
+      );
+
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      if (result && result.ok && result.config) {
         setConfig(result.config);
         if (result.source === 'cloud') {
           setCloudSyncStatus('synced');
