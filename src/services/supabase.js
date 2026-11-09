@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Precedence: Vite env vars -> localStorage overrides (configured via in-app UI)
+// Precedence: Vite env vars -> In-App UI overrides -> Default project credentials
 export const getSupabaseConfig = () => {
-  const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  const defaultUrl = 'https://wydahznwnleyfkgntgqt.supabase.co';
+  const defaultKey = 'sb_publishable_CXbIFGph5i4qmJ_5SZ_oWA_XD8MqjQR';
+
+  const envUrl = (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_URL.trim()) || defaultUrl;
+  const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY && import.meta.env.VITE_SUPABASE_ANON_KEY.trim()) || defaultKey;
 
   const localUrl = typeof window !== 'undefined' ? (localStorage.getItem('supabase_custom_url') || '') : '';
   const localKey = typeof window !== 'undefined' ? (localStorage.getItem('supabase_custom_key') || '') : '';
@@ -76,11 +79,11 @@ export const testSupabaseConnection = async () => {
 
     if (error) {
       // If table doesn't exist yet, but credentials work
-      if (error.code === '42P01') {
+      if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('schema cache')) {
         return {
           ok: false,
           needsTable: true,
-          error: 'Connected to Supabase! However, the "birthday_experiences" table does not exist yet. Please run the SQL setup script.',
+          error: 'Connected to Supabase! However, the "birthday_experiences" table does not exist yet. Please run the SQL setup script in your Supabase SQL Editor.',
         };
       }
       return { ok: false, error: error.message };
@@ -91,3 +94,4 @@ export const testSupabaseConnection = async () => {
     return { ok: false, error: err.message || 'Network error reaching Supabase.' };
   }
 };
+

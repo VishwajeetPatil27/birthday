@@ -67,3 +67,4 @@ CREATE POLICY "Public media update access"
   ON storage.objects
   FOR UPDATE
   USING (bucket_id = 'birthday-media');
+

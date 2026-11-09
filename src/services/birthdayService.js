@@ -260,3 +260,4 @@ export const subscribeToBirthdayConfig = (experienceId = DEFAULT_EXPERIENCE_ID, 
     return () => {};
   }
 };
+
