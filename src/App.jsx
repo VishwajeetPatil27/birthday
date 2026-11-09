@@ -22,7 +22,7 @@ import { LetterPage } from './pages/LetterPage';
 import { FinalPage } from './pages/FinalPage';
 
 const ExperienceContent = () => {
-  const { currentPage, nextPage, prevPage, isCustomizerOpen, setIsCustomizerOpen } = useBirthday();
+  const { currentPage, nextPage, prevPage, isCustomizerOpen, setIsCustomizerOpen, isCloudLoading } = useBirthday();
   const { securityWarning } = useSecurityProtection();
 
   // Mobile Touch Swipe Gesture: Swipe left to turn page, swipe right to go back
@@ -34,6 +34,27 @@ const ExperienceContent = () => {
       if (currentPage > 1) prevPage();
     },
   });
+
+  if (isCloudLoading) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-blush-50 via-cream-50 to-lavender-50 select-none p-6 text-center">
+        <motion.div
+          animate={{ scale: [1, 1.15, 1], rotate: [0, 6, -6, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          className="w-20 h-20 rounded-full bg-gradient-to-tr from-pink-400 via-rose-400 to-lavender-400 flex items-center justify-center text-white shadow-glow-pink mb-4"
+        >
+          <span className="text-3xl animate-pulse">💖</span>
+        </motion.div>
+        <span className="text-xs font-bold uppercase tracking-widest text-rose-500 mb-1">
+          A THOUSAND LITTLE REASONS
+        </span>
+        <h2 className="font-serif text-xl sm:text-2xl font-bold text-gray-800">
+          Unfolding your little universe... ✨
+        </h2>
+        <p className="text-xs text-gray-400 mt-2">Loading birthday memories across the stars</p>
+      </div>
+    );
+  }
 
   const renderCurrentPage = () => {
     switch (currentPage) {

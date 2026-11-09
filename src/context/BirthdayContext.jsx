@@ -3,11 +3,17 @@ import { birthdayConfig } from '../data/birthdayConfig';
 import { dreamSynth } from '../utils/audioSynthesizer';
 import { soundFX } from '../utils/soundEffects';
 import { triggerRomanticConfetti, triggerHeartShower } from '../utils/confetti';
+import {
+  fetchBirthdayConfig,
+  saveBirthdayConfig,
+  subscribeToBirthdayConfig,
+} from '../services/birthdayService';
+import { isSupabaseConfigured } from '../services/supabase';
 
 const BirthdayContext = createContext(null);
 
 export const BirthdayProvider = ({ children }) => {
-  // Load config or use default
+  // Load config: start from local cache or default, then hydrate from cloud
   const [config, setConfig] = useState(() => {
     try {
       const saved = localStorage.getItem('birthday_custom_config');
@@ -16,6 +22,10 @@ export const BirthdayProvider = ({ children }) => {
       return birthdayConfig;
     }
   });
+
+  const [isCloudLoading, setIsCloudLoading] = useState(true);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState('checking'); // 'checking' | 'synced' | 'local_only' | 'error' | 'syncing'
+  const [cloudError, setCloudError] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [unlockedSurprises, setUnlockedSurprises] = useState(() => {
@@ -47,8 +57,50 @@ export const BirthdayProvider = ({ children }) => {
   const [audioMode, setAudioMode] = useState('synth'); // 'mp3' or 'synth'
   const [audioElement, setAudioElement] = useState(null);
 
+  // Initial Cloud Hydration & Real-time Synchronization
+  const loadCloudConfig = async () => {
+    setIsCloudLoading(true);
+    setCloudSyncStatus('checking');
+
+    try {
+      const result = await fetchBirthdayConfig('default');
+      if (result.ok && result.config) {
+        setConfig(result.config);
+        if (result.source === 'cloud') {
+          setCloudSyncStatus('synced');
+          setCloudError(null);
+        } else {
+          setCloudSyncStatus(isSupabaseConfigured() ? 'synced' : 'local_only');
+        }
+      }
+    } catch (err) {
+      console.warn('Error fetching cloud config on startup:', err);
+      setCloudSyncStatus('local_only');
+      setCloudError(err.message || 'Could not reach cloud database');
+    } finally {
+      setIsCloudLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCloudConfig();
+
+    // Listen to real-time updates from other devices (e.g. laptop saves -> mobile updates)
+    const unsubscribe = subscribeToBirthdayConfig('default', (updatedCloudConfig) => {
+      console.info('Realtime cloud update received across devices ✨');
+      setConfig(updatedCloudConfig);
+      setCloudSyncStatus('synced');
+      triggerHeartShower();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   // Initialize HTML5 Audio element for MP3 check
   useEffect(() => {
+    if (!config?.audio?.src) return;
     const audio = new Audio(config.audio.src);
     audio.loop = true;
     audio.volume = audioVolume;
@@ -68,7 +120,7 @@ export const BirthdayProvider = ({ children }) => {
     return () => {
       audio.pause();
     };
-  }, [config.audio.src]);
+  }, [config?.audio?.src]);
 
   // Handle Play / Pause
   const toggleMusic = () => {
@@ -166,22 +218,35 @@ export const BirthdayProvider = ({ children }) => {
     triggerRomanticConfetti();
   };
 
-  // Save customized config
-  const updateCustomConfig = (newConfig) => {
+  // Save customized config to Cloud & Local Storage
+  const updateCustomConfig = async (newConfig) => {
     setConfig(newConfig);
-    try {
-      localStorage.setItem('birthday_custom_config', JSON.stringify(newConfig));
-    } catch (e) {
-      console.warn(e);
+    setCloudSyncStatus('syncing');
+
+    const result = await saveBirthdayConfig(newConfig, 'default');
+    if (result.ok && result.savedToCloud) {
+      setCloudSyncStatus('synced');
+      setCloudError(null);
+    } else {
+      setCloudSyncStatus(isSupabaseConfigured() ? 'error' : 'local_only');
+      if (result.error) {
+        setCloudError(result.error);
+      }
     }
+    return result;
   };
 
-  const resetCustomConfig = () => {
+  const resetCustomConfig = async () => {
     setConfig(birthdayConfig);
     try {
       localStorage.removeItem('birthday_custom_config');
     } catch (e) {
       console.warn(e);
+    }
+    if (isSupabaseConfigured()) {
+      setCloudSyncStatus('syncing');
+      await saveBirthdayConfig(birthdayConfig, 'default');
+      setCloudSyncStatus('synced');
     }
   };
 
@@ -191,6 +256,10 @@ export const BirthdayProvider = ({ children }) => {
         config,
         updateCustomConfig,
         resetCustomConfig,
+        isCloudLoading,
+        cloudSyncStatus,
+        cloudError,
+        loadCloudConfig,
         currentPage,
         goToPage,
         nextPage,
